@@ -1,0 +1,6 @@
+rdflib
+requests
+
+#Development
+pylint
+jupyterlab
