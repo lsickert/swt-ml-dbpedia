@@ -1,5 +1,6 @@
 rdflib
 requests
+filelock
 
 #Development
 pylint

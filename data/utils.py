@@ -11,7 +11,6 @@ DATA_FOLDER = Path(__file__).parent.resolve()
 
 
 def get_data(urllist: list, force_redownload: bool = False) -> list:
-    mp.freeze_support()
 
     arglist = []
 
@@ -25,18 +24,18 @@ def get_data(urllist: list, force_redownload: bool = False) -> list:
     pool = mp.Pool(processes=pool_size, initializer=tqdm.set_lock,
                    initargs=(mp.RLock(),))
 
-    filenames = pool.starmap(_get_files, arglist)
+    filenames = pool.starmap(_get_file, arglist)
 
     return filenames
 
 
-def _get_files(url: str, force_redownload: bool = False, pid = None) -> str:
+def _get_file(url: str, force_redownload: bool = False, pid = None) -> str:
 
     fname = url.split("/")[-1]
 
     if not Path(DATA_FOLDER / fname).exists() or force_redownload:
         _download_file(url, fname, pid)
-        if fname.split(".")[-1] == "bz2":
+        if fname.endswith(".bz2"):
             fname = _extract_file(fname, pid)
 
     return fname

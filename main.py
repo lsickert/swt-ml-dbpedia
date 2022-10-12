@@ -1,4 +1,5 @@
-import data.utils
+import data.utils as dat_util
+from dbpedia_enhance import property_extractor
 
 LANG_FILES = [
     "https://databus.dbpedia.org/dbpedia/generic/infobox-properties/2022.03.01/infobox-properties_lang=de.ttl.bz2",
@@ -8,4 +9,6 @@ LANG_FILES = [
 
 if __name__ == "__main__":
 
-    filenames = data.utils.get_data(LANG_FILES)
+    filenames = dat_util.get_data(LANG_FILES)
+
+    property_extractor.extract_properties("infobox-properties_lang=nl.ttl")

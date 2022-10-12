@@ -1,7 +1,7 @@
 ### Custom Ignore
 
-data/*.ttl
-data/*.bz2
+data/*
+!data/utils.py
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,visualstudiocode,jupyternotebooks,osx,windows,pycharm
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,visualstudiocode,jupyternotebooks,osx,windows,pycharm
