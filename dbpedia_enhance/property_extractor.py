@@ -9,7 +9,10 @@ from typing import Tuple
 
 
 def extract_properties(file: str):
-
+    """
+    extract all properties from a language file and stores the results in individual lists. 
+    Additionally a single csv file containing all distinct property names is created
+    """
     lang_idx = file.find("lang=")
     lang_code = file[lang_idx+5:lang_idx+7]
 
@@ -42,16 +45,17 @@ def extract_properties(file: str):
 
 
 def extract_subj_name(subject: str) -> str:
-
+    """extracts the name of a subject from rdf syntax"""
     return subject.split("resource/")[-1]
 
 
 def extract_prop_name(prop: str) -> str:
-
+    """extracts the name of a property from rdf syntax"""
     return prop.split("property/")[-1]
 
 
 def extract_value(value: str) -> Tuple[str, str]:
+    """extracts the value of an rdf triple"""
     # remove turtle syntax at the end
     value = value[:-2]
     value = value.strip()
@@ -65,18 +69,22 @@ def extract_value(value: str) -> Tuple[str, str]:
             val_list = value.split("^^")
             if len(val_list) > 1:
                 typ = val_list[-1].split("#")[-1]
-                return val_list[0][1:-1], typ
+                value = val_list[0]
+                if value.endswith('"'):
+                    return value[1:-1], typ
+                return value, typ
             else:
                 value = val_list[0] + ">"
                 return value, "other"
     else:
-        value = value.split("@")
-        value = value[0][1:-1]
+        value = value.split("@")[0]
+        if value.startswith('"'):
+            value = value[1:-1]
         return value, "string"
 
 
-def _extract_properties(file: Path, chunk_start: int, chunk_end: int, size: int, out_folder: Path, pid: int) -> None:
-
+def _extract_properties(file: Path, chunk_start: int, chunk_end: int, size: int, out_folder: Path, pid: int) -> set:
+    """extracts the properties from an rdf file and saves them into individual files. Returns a set with all individual property names"""
     all_props = set()
 
     desc = f"#{pid}"
@@ -127,6 +135,7 @@ def _extract_properties(file: Path, chunk_start: int, chunk_end: int, size: int,
 
 
 def _get_chunks(file: Path, out: Path) -> list:
+    """split a file into smaller chunks for multiprocessing"""
     # multiprocessing code adapted from https://nurdabolatov.com/parallel-processing-large-file-in-python
 
     cpus = mp.cpu_count()

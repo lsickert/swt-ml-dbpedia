@@ -11,7 +11,7 @@ DATA_FOLDER = Path(__file__).parent.resolve()
 
 
 def get_data(urllist: list, force_redownload: bool = False) -> list:
-
+    """download and extract the relevant rdf files from dbpedia"""
     arglist = []
 
     for idx, url in enumerate(urllist):
@@ -30,7 +30,7 @@ def get_data(urllist: list, force_redownload: bool = False) -> list:
 
 
 def _get_file(url: str, force_redownload: bool = False, pid = None) -> str:
-
+    """downloads and extracts a single file from dbpedia"""
     fname = url.split("/")[-1]
 
     if not Path(DATA_FOLDER / fname).exists() or force_redownload:
@@ -42,7 +42,7 @@ def _get_file(url: str, force_redownload: bool = False, pid = None) -> str:
 
 
 def _download_file(url: str, filename: str, pid) -> None:
-
+    """downloads a file from dbpedia"""
     with requests.get(url, stream=True) as res:
         if res.status_code != 200:
             res.raise_for_status()
@@ -59,6 +59,7 @@ def _download_file(url: str, filename: str, pid) -> None:
 
 
 def _extract_file(file: str, pid) -> str:
+    """extracts a file from dbpedia in bz2 format"""
     fname = file[:-4]
     desc = f"extracting {file}"
     compfile = bz2.open(DATA_FOLDER / file)
@@ -71,6 +72,7 @@ def _extract_file(file: str, pid) -> str:
 
 
 def _get_file_size(f):
+    """returns the size of a file object"""
     cur = f.tell()
     f.seek(0, io.SEEK_END)
     size = f.tell()
