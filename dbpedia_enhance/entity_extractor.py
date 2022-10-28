@@ -6,6 +6,7 @@ from filelock import FileLock
 from pathlib import Path
 from data.utils import DATA_FOLDER
 from typing import Tuple
+from .utils import extract_prop_name, extract_subj_name, extract_value
 
 
 def extract_subjects(file: str):
@@ -42,45 +43,6 @@ def extract_subjects(file: str):
         out_writer = csv.writer(out)
         for sub in all_subjects:
             out_writer.writerow([sub])
-
-
-def extract_subj_name(subject: str) -> str:
-    """extracts the name of a subject from rdf syntax"""
-    return subject.split("resource/")[-1]
-
-
-def extract_prop_name(prop: str) -> str:
-    """extracts the name of a property from rdf syntax"""
-    return prop.split("property/")[-1]
-
-
-def extract_value(value: str) -> Tuple[str, str]:
-    """extracts the value of an rdf triple"""
-    # remove turtle syntax at the end
-    value = value[:-2]
-    value = value.strip()
-
-    # detect if value is text or not
-    if value.endswith(">"):
-        value = value[:-1]
-        if value.find("resource/") != -1:
-            return value.split("resource/")[-1], "instance"
-        else:
-            val_list = value.split("^^")
-            if len(val_list) > 1:
-                typ = val_list[-1].split("#")[-1]
-                value = val_list[0]
-                if value.endswith('"'):
-                    return value[1:-1], typ
-                return value, typ
-            else:
-                value = val_list[0] + ">"
-                return value, "other"
-    else:
-        value = value.split("@")[0]
-        if value.startswith('"'):
-            value = value[1:-1]
-        return value, "string"
 
 
 def _extract_subjects(file: Path, chunk_start: int, chunk_end: int, size: int, out_folder: Path, pid: int) -> set:
