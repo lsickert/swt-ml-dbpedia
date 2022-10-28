@@ -16,8 +16,8 @@ def main():
         "format": "json"
     }
 
-    r = requests.get(url = URL, params=PARAMS)
-        # "https://en.wikipedia.org/w/api.php?action=query&titles=Michael_Jackson_(writer)&prop=langlinks&lllimit=500&formatversion=2&format=json")
+    r = requests.get(url=URL, params=PARAMS)
+    # "https://en.wikipedia.org/w/api.php?action=query&titles=Michael_Jackson_(writer)&prop=langlinks&lllimit=500&formatversion=2&format=json")
 
     data = r.json()
 
@@ -34,6 +34,7 @@ def main():
                 results['de'].append(language_info['title'])
             print(language_info['lang'] + '\t' + language_info['title'])
     print(results)
+
 
 if __name__ == "__main__":
     main()

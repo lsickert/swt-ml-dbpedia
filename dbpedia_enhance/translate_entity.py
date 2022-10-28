@@ -37,16 +37,18 @@ def get_translation_query(URIs, language_1, language_2):
 
 def run_query(query):
     url = 'https://query.wikidata.org/sparql'
-    headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36'}
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36'}
     try:
-        data = requests.get(url, headers=headers, params={'query': query, 'format': 'json'}).json()
+        data = requests.get(url, headers=headers, params={
+                            'query': query, 'format': 'json'}).json()
     except ValueError:
         print("Received a value error from WikiData API")
         return None
     return data
 
 
-def query_all (uri, l1, l2, results):
+def query_all(uri, l1, l2, results):
     query = get_translation_query(uri, l1, l2)
     data = run_query(query)
     # print(data)

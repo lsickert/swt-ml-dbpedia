@@ -15,7 +15,7 @@ def get_data(urllist: list, force_redownload: bool = False) -> list:
     arglist = []
 
     for idx, url in enumerate(urllist):
-        args = (url, force_redownload,idx)
+        args = (url, force_redownload, idx)
         arglist.append(args)
 
     cpus = mp.cpu_count()
@@ -29,7 +29,7 @@ def get_data(urllist: list, force_redownload: bool = False) -> list:
     return filenames
 
 
-def _get_file(url: str, force_redownload: bool = False, pid = None) -> str:
+def _get_file(url: str, force_redownload: bool = False, pid=None) -> str:
     """downloads and extracts a single file from dbpedia"""
     fname = url.split("/")[-1]
 

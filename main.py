@@ -17,5 +17,3 @@ if __name__ == "__main__":
         lang_codes.append(utils.get_lang_code(fname))
         property_extractor.extract_properties(fname)
         entity_extractor_new.extract_subjects(fname)
-
-    
