@@ -5,8 +5,7 @@ from tqdm import tqdm
 from filelock import FileLock
 from pathlib import Path
 from data.utils import DATA_FOLDER
-from typing import Tuple
-from .utils import extract_prop_name, extract_subj_name, extract_value
+from .utils import extract_prop_name, extract_subj_name, extract_value, get_lang_code
 
 
 def extract_properties(file: str):
@@ -14,8 +13,7 @@ def extract_properties(file: str):
     extract all properties from a language file and stores the results in individual lists. 
     Additionally a single csv file containing all distinct property names is created
     """
-    lang_idx = file.find("lang=")
-    lang_code = file[lang_idx+5:lang_idx+7]
+    lang_code = get_lang_code(file)
 
     out_path = DATA_FOLDER / lang_code
 
@@ -43,6 +41,8 @@ def extract_properties(file: str):
         out_writer = csv.writer(out)
         for prop in all_properties:
             out_writer.writerow([prop])
+
+    return all_properties
 
 
 def _extract_properties(file: Path, chunk_start: int, chunk_end: int, size: int, out_folder: Path, pid: int) -> set:

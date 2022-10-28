@@ -41,4 +41,5 @@ def find_matching_prop(entity, src_lang, trg_lang):
         print(entity, '\n', prop_matches)
 
 #find_entity_match('website', 'en', 'nl')
-find_matching_prop('!!!', 'en', 'nl')
+if __name__ == "__main__":
+    find_matching_prop('!!!', 'en', 'nl')

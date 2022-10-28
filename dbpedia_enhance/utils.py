@@ -1,6 +1,14 @@
 from typing import Tuple
 
 
+def get_lang_code(fname: str) -> str:
+    """extracts the language code from a dbpedia file name"""
+    lang_idx = fname.find("lang=")
+    lang_code = fname[lang_idx+5:lang_idx+7]
+
+    return lang_code
+
+
 def extract_subj_name(subject: str) -> str:
     """extracts the name of a subject from rdf syntax"""
     return subject.split("resource/")[-1]
