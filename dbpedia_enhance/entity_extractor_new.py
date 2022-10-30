@@ -33,7 +33,7 @@ def extract_subjects(file: str):
     for subjects in all_sub_list:
         all_subjects.update(subjects)
 
-    with open(DATA_FOLDER / f"{lang_code}_subjects.csv", "a", encoding="utf-8", newline="") as out:
+    with open(DATA_FOLDER / f"{lang_code}_subjects.csv", "w", encoding="utf-8", newline="") as out:
         out_writer = csv.writer(out)
         for sub in all_subjects:
             out_writer.writerow([sub])

@@ -37,7 +37,7 @@ def extract_properties(file: str):
     for properties in all_prop_list:
         all_properties.update(properties)
 
-    with open(DATA_FOLDER / f"{lang_code}_properties.csv", "a", encoding="utf-8", newline="") as out:
+    with open(DATA_FOLDER / f"{lang_code}_properties.csv", "w", encoding="utf-8", newline="") as out:
         out_writer = csv.writer(out)
         for prop in all_properties:
             out_writer.writerow([prop])

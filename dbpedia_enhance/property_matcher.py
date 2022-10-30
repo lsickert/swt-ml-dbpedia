@@ -8,6 +8,7 @@ from tqdm import tqdm
 def find_matches(src_props: set, trg_props: set, src_lang: str, trg_lang: str) -> list:
     """finds all matching propeerties between two languages"""
     matches = []
+    print("### finding direct matches")
     direct_matches = find_direct_matches(src_props, trg_props)
 
     # remove all direct matches from both sets to make them smaller
@@ -16,6 +17,7 @@ def find_matches(src_props: set, trg_props: set, src_lang: str, trg_lang: str) -
         src_props.discard(match)
         trg_props.discard(match)
 
+    print("### finding entity matches")
     entity_matches = find_entity_matches(
         src_props, trg_props, src_lang, trg_lang)
 
@@ -23,6 +25,22 @@ def find_matches(src_props: set, trg_props: set, src_lang: str, trg_lang: str) -
         matches.append(match)
         src_props.discard(match[0])
         trg_props.discard(match[1])
+
+    out_file = DATA_FOLDER / f"{src_lang}-{trg_lang}_matches.csv"
+
+    with open(out_file, "w", encoding="utf-8", newline="") as out:
+        out_writer = csv.writer(out)
+        out_writer.writerow(["source", "target"])
+
+        for match in matches:
+            out_writer.writerow([match[0],match[1]])
+        
+        for prop in src_props:
+            out_writer.writerow([prop,""])
+        
+        for prop in trg_props:
+            out_writer.writerow(["",prop])
+    
 
 
 def find_direct_matches(src_props: set, trg_props: set) -> set:
