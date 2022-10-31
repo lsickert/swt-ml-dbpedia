@@ -38,7 +38,8 @@ def extract_properties(file: str):
         new_arg = (*arg, idx+1)
         pool_args.append(new_arg)
 
-    with mp.Pool(processes=mp.cpu_count(), initializer=tqdm.set_lock, initargs=(mp.RLock(),)) as pool:
+    tqdm.set_lock(mp.RLock())
+    with mp.Pool(processes=mp.cpu_count(), initializer=tqdm.set_lock, initargs=(tqdm.get_lock(),)) as pool:
         all_prop_list = pool.starmap(_extract_properties, pool_args)
 
     for file in out_path.iterdir():

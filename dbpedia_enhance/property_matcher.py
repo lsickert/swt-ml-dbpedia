@@ -10,6 +10,7 @@ def find_matches(src_props: set, trg_props: set, src_lang: str, trg_lang: str) -
     matches = []
     print("### finding direct matches")
     direct_matches = find_direct_matches(src_props, trg_props)
+    print(f"### {len(direct_matches)} found")
 
     # remove all direct matches from both sets to make them smaller
     for match in direct_matches:
@@ -20,6 +21,7 @@ def find_matches(src_props: set, trg_props: set, src_lang: str, trg_lang: str) -
     print("### finding entity matches")
     entity_matches = find_entity_matches(
         src_props, trg_props, src_lang, trg_lang)
+    print(f"### {len(entity_matches)} enitity matches found")
 
     for match in entity_matches:
         matches.append(match)
@@ -55,11 +57,10 @@ def find_entity_matches(src_props: list, trg_props: list, src_lang: str, trg_lan
     src_splits = _split_list_equal(src_props, num_splits)
     trg_splits = _split_list_equal(trg_props, num_splits)
 
-    split_args = []
-
     all_matches = []
 
     for s in range(num_splits):
+        split_args = []
         trg_dict = _get_split_dict(trg_splits[s], trg_lang)
         for idx, src_split in enumerate(src_splits):
             split_args.append((src_split, trg_dict, src_lang, trg_lang, idx+1))
