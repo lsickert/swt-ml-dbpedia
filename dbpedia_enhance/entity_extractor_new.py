@@ -15,11 +15,7 @@ def extract_subjects(file: str):
 
     lang_code = get_lang_code(file)
 
-    out_path = DATA_FOLDER / lang_code
-
-    _check_dir_exists(out_path)
-
-    chunk_args = _get_chunks(DATA_FOLDER / file, out_path)
+    chunk_args = _get_chunks(DATA_FOLDER / file)
 
     pool_args = []
     for idx, arg in enumerate(chunk_args):
@@ -38,8 +34,9 @@ def extract_subjects(file: str):
         for sub in all_subjects:
             out_writer.writerow([sub])
 
+    return all_subjects
 
-def _extract_subjects(file: Path, chunk_start: int, chunk_end: int, size: int, out_folder: Path, pid: int) -> set:
+def _extract_subjects(file: Path, chunk_start: int, chunk_end: int, size: int, pid: int) -> set:
     """extracts the subjects from an rdf file and saves them into individual files. Returns a set with all individual subject names"""
     all_subjects = set()
 
@@ -64,7 +61,7 @@ def _extract_subjects(file: Path, chunk_start: int, chunk_end: int, size: int, o
     return all_subjects
 
 
-def _get_chunks(file: Path, out: Path) -> list:
+def _get_chunks(file: Path) -> list:
     """split a file into smaller chunks for multiprocessing"""
     # multiprocessing code adapted from https://nurdabolatov.com/parallel-processing-large-file-in-python
 
@@ -104,7 +101,7 @@ def _get_chunks(file: Path, out: Path) -> list:
 
             size = chunk_end - chunk_start
 
-            args = (file, chunk_start, chunk_end, size, out)
+            args = (file, chunk_start, chunk_end, size)
             chunk_args.append(args)
 
             chunk_start = chunk_end

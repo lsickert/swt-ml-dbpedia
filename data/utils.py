@@ -38,6 +38,10 @@ def _get_file(url: str, force_redownload: bool = False, pid=None) -> str:
         if fname.endswith(".bz2"):
             fname = _extract_file(fname, pid)
 
+    #remove compression encoding in case file was not redownloaded
+    if fname.endswith(".bz2"):
+        fname = fname[:-4]
+
     return fname
 
 

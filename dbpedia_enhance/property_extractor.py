@@ -17,6 +17,18 @@ def extract_properties(file: str):
 
     out_path = DATA_FOLDER / lang_code
 
+    prop_file = DATA_FOLDER / f"{lang_code}_properties.csv"
+
+    all_properties = set()
+
+    if prop_file.exists():
+        with open(prop_file, "r", newline="", encoding="utf-8") as csvfile:
+            csvreader = csv.reader(csvfile)
+            for row in csvreader:
+                all_properties.update(row)
+
+        return all_properties
+
     _check_dir_exists(out_path)
 
     chunk_args = _get_chunks(DATA_FOLDER / file, out_path)
@@ -33,7 +45,6 @@ def extract_properties(file: str):
         if file.is_file() and file.suffix == ".lock":
             file.unlink(missing_ok=True)
 
-    all_properties = set()
     for properties in all_prop_list:
         all_properties.update(properties)
 
@@ -66,8 +77,6 @@ def _extract_properties(file: Path, chunk_start: int, chunk_end: int, size: int,
                     prop = extract_prop_name(content[1])
                     value, form = extract_value(content[2])
 
-                    all_props.add(prop)
-
                     out_file = out_folder / f"{prop}.csv"
                     lock_file = out_folder / f"{prop}.csv.lock"
                     lock = FileLock(str(lock_file))
@@ -83,6 +92,8 @@ def _extract_properties(file: Path, chunk_start: int, chunk_end: int, size: int,
                             with open(out_file, "a", encoding="utf-8", newline="") as out:
                                 out_writer = csv.writer(out)
                                 out_writer.writerow([subject, value, form])
+
+                    all_props.add(prop)
                 except BaseException as e:
                     err_file = out_folder / "_err.log"
                     lock_file = out_folder / "_err.log.lock"
