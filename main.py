@@ -43,11 +43,11 @@ if __name__ == "__main__":
     for fname in filenames:
         if re.search(f"{options.src_lang}.ttl", fname):
             src_props = property_extractor.extract_properties(fname)
-            #src_entities = entity_extractor_new.extract_subjects(fname)
+            src_entities = entity_extractor_new.extract_subjects(fname)
         else:
             trg_props = property_extractor.extract_properties(fname)
-            #trg_entities = entity_extractor_new.extract_subjects(fname)
+            trg_entities = entity_extractor_new.extract_subjects(fname)
+        #property_extractor.extract_properties(fname)
+        #entity_extractor_new.extract_subjects(fname)
 
-    #print(property_matcher.find_direct_matches(src_props, trg_props))
-
-    print(property_matcher.find_entity_matches(list(src_props), list(trg_props), options.src_lang, options.trg_lang))
+    print(property_matcher.find_matches(src_props, trg_props, options.src_lang, options.trg_lang))

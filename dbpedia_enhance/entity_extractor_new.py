@@ -15,6 +15,18 @@ def extract_subjects(file: str):
 
     lang_code = get_lang_code(file)
 
+    subj_file = DATA_FOLDER / f"{lang_code}_subjects.csv"
+
+    all_subjects = set()
+
+    if subj_file.exists():
+        with open(subj_file, "r", newline="", encoding="utf-8") as csvfile:
+            csvreader = csv.reader(csvfile)
+            for row in csvreader:
+                all_subjects.update(row)
+
+        return all_subjects
+
     chunk_args = _get_chunks(DATA_FOLDER / file)
 
     pool_args = []
@@ -25,11 +37,11 @@ def extract_subjects(file: str):
     with mp.Pool(processes=mp.cpu_count(), initializer=tqdm.set_lock, initargs=(mp.RLock(),)) as pool:
         all_sub_list = pool.starmap(_extract_subjects, pool_args)
 
-    all_subjects = set()
+
     for subjects in all_sub_list:
         all_subjects.update(subjects)
 
-    with open(DATA_FOLDER / f"{lang_code}_subjects.csv", "w", encoding="utf-8", newline="") as out:
+    with open(subj_file, "w", encoding="utf-8", newline="") as out:
         out_writer = csv.writer(out)
         for sub in all_subjects:
             out_writer.writerow([sub])

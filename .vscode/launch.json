@@ -12,6 +12,13 @@
             "console": "integratedTerminal",
             "args": ["--src_lang","en","--trg_lang","nl"],
             "justMyCode": true
-        }
+        },
+        {
+            "name": "Attach to SubProcess",
+            "type": "python",
+            "request": "attach",
+            "processId": "${command:pickProcess}",
+            "justMyCode": true
+    }
     ]
 }

@@ -5,6 +5,7 @@ from typing import Any
 from tqdm.auto import tqdm
 import re
 
+SPECIAL_PROPERTIES = ["url","x","y"]
 
 def find_matches(src_props: set, trg_props: set, src_lang: str, trg_lang: str) -> list:
     """finds all matching propeerties between two languages"""
@@ -18,11 +19,11 @@ def find_matches(src_props: set, trg_props: set, src_lang: str, trg_lang: str) -
     # remove all direct matches from target set to make them smaller
     for match in direct_matches:
         matches.append((match, match))
-        src_props.discard(match)
+        trg_props.discard(match)
 
     print("### finding entity matches")
     entity_matches = find_entity_matches(
-        src_props, trg_props, src_lang, trg_lang)
+        list(src_props), list(trg_props), src_lang, trg_lang)
     print(f"### {len(entity_matches)} enitity matches found")
 
     for match in entity_matches:
@@ -74,7 +75,7 @@ def find_entity_matches(src_props: list, trg_props: list, src_lang: str, trg_lan
         for match_list in all_match_list:
             all_matches.extend(match_list)
 
-    return all_match_list
+    return all_matches
 
 
 def _get_split_dict(prop_list: list, lang: str) -> dict:
@@ -96,7 +97,7 @@ def _get_split_dict(prop_list: list, lang: str) -> dict:
 
                     for row in csv_trg_reader:
                         if not row[0] == "subject":
-                            trg_entities.append(row)
+                            trg_entities.append([row[0],row[1]])
 
                 prop_dict[prop] = trg_entities
                 # TODO: add translation of target entitiy to source language here
@@ -113,12 +114,26 @@ def _find_entity_matches(src_props: list, trg_lang_props: dict, src_lang: str, t
     size = len(src_props)
     desc = f"#{pid}"
 
+    def compare_entities(src_ents, trg_ents):
+        # TODO: figure out how to handle multiple matching properties
+        max_matches = 0.8 * min(len(src_ents),len(trg_ents))
+        matches = 0
+
+        for trg_ent in trg_ents:
+            for src_ent in src_ents:
+                if src_ent == trg_ent:
+                    matches += 1
+
+                    if matches == max_matches:
+                        return True
+
+        return False
+
     with tqdm(total=size, desc=desc, position=pid) as pbar:
         for src_property in src_props:
             src_path = DATA_FOLDER / src_lang / f"{src_property}.csv"
 
             src_entities = []
-            src_ent_len = len(src_entities)
             pbar.update(1)
 
             try:
@@ -126,17 +141,11 @@ def _find_entity_matches(src_props: list, trg_lang_props: dict, src_lang: str, t
                     csv_src_reader = csv.reader(csv_src_file)
                     for row in csv_src_reader:
                         if not row[0] == "subject":
-                            src_entities.append(row)
+                            src_entities.append([row[0],row[1]])
 
                 for prop, entities in trg_lang_props.items():
-                    matches = 0
-                    for ent in entities:
-                        for src_ent in src_entities:
-                            if src_ent[0] == ent[0] and src_ent[1] == ent[1]:
-                                matches += 1
 
-                    # TODO: figure out how to handle multiple matching properties
-                    if matches >= 0.8 * min(src_ent_len,len(entities)):
+                    if compare_entities(src_entities, entities):
                         matched_props.append((src_property, prop))
                         break
 
@@ -151,7 +160,7 @@ def clean_prop_list(props: set) -> set:
 
     for prop in props:
         #remove encapsulated properties
-        if prop.startsWith("\""):
+        if prop.startswith("\""):
             continue
         # anything with a % inside is very likely wrongly parsed formatting
         if prop.find("%") > -1:
@@ -159,6 +168,10 @@ def clean_prop_list(props: set) -> set:
         # remove everything without letters or digits
         if re.search(r"[a-zA-Z\d]", prop) is None:
             continue
+        # remove certain special properties, where we already know that they match and/or matches might not hold any significant value
+        if prop in SPECIAL_PROPERTIES:
+            continue
+
         cleaned_props.add(prop)
     
     return cleaned_props
