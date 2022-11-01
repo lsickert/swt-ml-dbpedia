@@ -3,20 +3,22 @@ from data.utils import DATA_FOLDER
 import csv
 from typing import Any
 from tqdm.auto import tqdm
-import random
+import re
+
 
 def find_matches(src_props: set, trg_props: set, src_lang: str, trg_lang: str) -> list:
     """finds all matching propeerties between two languages"""
     matches = []
+    src_props = clean_prop_list(src_props)
+    trg_props = clean_prop_list(trg_props)
     print("### finding direct matches")
     direct_matches = find_direct_matches(src_props, trg_props)
     print(f"### {len(direct_matches)} found")
 
-    # remove all direct matches from both sets to make them smaller
+    # remove all direct matches from target set to make them smaller
     for match in direct_matches:
         matches.append((match, match))
         src_props.discard(match)
-        trg_props.discard(match)
 
     print("### finding entity matches")
     entity_matches = find_entity_matches(
@@ -59,7 +61,7 @@ def find_entity_matches(src_props: list, trg_props: list, src_lang: str, trg_lan
 
     all_matches = []
 
-    for s in range(num_splits):
+    for s in range(2):
         split_args = []
         trg_dict = _get_split_dict(trg_splits[s], trg_lang)
         for idx, src_split in enumerate(src_splits):
@@ -73,6 +75,7 @@ def find_entity_matches(src_props: list, trg_props: list, src_lang: str, trg_lan
             all_matches.extend(match_list)
 
     return all_match_list
+
 
 def _get_split_dict(prop_list: list, lang: str) -> dict:
 
@@ -92,13 +95,16 @@ def _get_split_dict(prop_list: list, lang: str) -> dict:
                     csv_trg_reader = csv.reader(csv_trg_file)
 
                     for row in csv_trg_reader:
-                        trg_entities.append(row)
+                        if not row[0] == "subject":
+                            trg_entities.append(row)
 
                 prop_dict[prop] = trg_entities
+                # TODO: add translation of target entitiy to source language here
             except:
                 continue
 
     return prop_dict
+
 
 def _find_entity_matches(src_props: list, trg_lang_props: dict, src_lang: str, trg_lang: str, pid: int) -> list:
     """find an entity with a given property in one language that also exists in another language"""
@@ -107,52 +113,55 @@ def _find_entity_matches(src_props: list, trg_lang_props: dict, src_lang: str, t
     size = len(src_props)
     desc = f"#{pid}"
 
-    trg_lang_path = DATA_FOLDER / trg_lang
-
     with tqdm(total=size, desc=desc, position=pid) as pbar:
-        random.shuffle(src_props)
-
         for src_property in src_props:
             src_path = DATA_FOLDER / src_lang / f"{src_property}.csv"
 
-            property_entities = []
+            src_entities = []
+            src_ent_len = len(src_entities)
             pbar.update(1)
 
             try:
                 with open(src_path, "r", newline="", encoding="utf-8") as csv_src_file:
                     csv_src_reader = csv.reader(csv_src_file)
                     for row in csv_src_reader:
-                        property_entities.append(row)
+                        if not row[0] == "subject":
+                            src_entities.append(row)
 
-                #shuffle property list so files block each other less
-                # random.shuffle(trg_lang_props)
-                # for prop in trg_lang_props:
-                #     trg_entities = []
+                for prop, entities in trg_lang_props.items():
+                    matches = 0
+                    for ent in entities:
+                        for src_ent in src_entities:
+                            if src_ent[0] == ent[0] and src_ent[1] == ent[1]:
+                                matches += 1
 
-                #     with open(trg_lang_path / f"{prop}.csv", "r", newline="", encoding="utf-8") as csv_trg_file:
-                #         csv_trg_reader = csv.reader(csv_trg_file)
+                    # TODO: figure out how to handle multiple matching properties
+                    if matches >= 0.8 * min(src_ent_len,len(entities)):
+                        matched_props.append((src_property, prop))
+                        break
 
-                #         for row in csv_trg_reader:
-                #             trg_entities.append(row)
-
-                #             # TODO: add translation of target entitiy to source language here
-
-                    for prop, entities in trg_lang_props.items():
-                        matches = []
-                        for ent in entities:
-                            match = _is_in_2d_list(property_entities, ent[0], 0) and _is_in_2d_list(
-                                property_entities, ent[1], 1)
-                            matches.append(match)
-
-                        # TODO: figure out how to handle multiple matching properties
-                        if len(matches) > 0.8/len(property_entities):
-                            matched_props.append((src_property, prop))
-                            break
             except:
                 continue
 
     return matched_props
 
+def clean_prop_list(props: set) -> set:
+    """remove properties from the property list, that are very likely parsing errors"""
+    cleaned_props = set()
+
+    for prop in props:
+        #remove encapsulated properties
+        if prop.startsWith("\""):
+            continue
+        # anything with a % inside is very likely wrongly parsed formatting
+        if prop.find("%") > -1:
+            continue
+        # remove everything without letters or digits
+        if re.search(r"[a-zA-Z\d]", prop) is None:
+            continue
+        cleaned_props.add(prop)
+    
+    return cleaned_props
 
 def _is_in_2d_list(l: list, val: Any, trg_col: int = None) -> bool:
     """returns True if a value is found in a 2-dimensional list, otherwise returns false"""
