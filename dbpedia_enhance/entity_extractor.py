@@ -20,6 +20,18 @@ def extract_subjects(file: str):
 
     _check_dir_exists(out_path)
 
+    subj_file = DATA_FOLDER / f"{lang_code}_subjects.csv"
+
+    all_subjects = set()
+
+    if subj_file.exists():
+        with open(subj_file, "r", newline="", encoding="utf-8") as csvfile:
+            csvreader = csv.reader(csvfile)
+            for row in csvreader:
+                all_subjects.update(row)
+
+        return all_subjects
+
     chunk_args = _get_chunks(DATA_FOLDER / file, out_path)
 
     pool_args = []
@@ -27,26 +39,28 @@ def extract_subjects(file: str):
         new_arg = (*arg, idx+1)
         pool_args.append(new_arg)
 
-    with mp.Pool(processes=mp.cpu_count(), initializer=tqdm.set_lock, initargs=(mp.RLock(),)) as pool:
+    tqdm.set_lock(mp.RLock())
+    with mp.Pool(processes=mp.cpu_count(), initializer=tqdm.set_lock, initargs=(tqdm.get_lock(),)) as pool:
         all_sub_list = pool.starmap(_extract_subjects, pool_args)
 
     for file in out_path.iterdir():
         if file.is_file() and file.suffix == ".lock":
             file.unlink(missing_ok=True)
 
-    all_subjects = set()
     for subjects in all_sub_list:
         all_subjects.update(subjects)
 
-    with open(DATA_FOLDER / f"{lang_code}_subjects.csv", "a", encoding="utf-8", newline="") as out:
+    with open(subj_file, "w", encoding="utf-8", newline="") as out:
         out_writer = csv.writer(out)
         for sub in all_subjects:
             out_writer.writerow([sub])
+    
+    return all_subjects
 
 
 def _extract_subjects(file: Path, chunk_start: int, chunk_end: int, size: int, out_folder: Path, pid: int) -> set:
     """extracts the subjects from an rdf file and saves them into individual files. Returns a set with all individual subject names"""
-    all_props = set()
+    all_subj = set()
 
     desc = f"#{pid}"
 
@@ -65,10 +79,9 @@ def _extract_subjects(file: Path, chunk_start: int, chunk_end: int, size: int, o
                     prop = extract_prop_name(content[1])
                     value, form = extract_value(content[2])
 
-                    all_props.add(prop)
-
                     out_file = out_folder / f"{subject}.csv"
                     lock_file = out_folder / f"{subject}.csv.lock"
+
                     lock = FileLock(str(lock_file))
 
                     with lock:
@@ -81,7 +94,9 @@ def _extract_subjects(file: Path, chunk_start: int, chunk_end: int, size: int, o
                         else:
                             with open(out_file, "a", encoding="utf-8", newline="") as out:
                                 out_writer = csv.writer(out)
-                                out_writer.writerow([prop, value, form])
+                                out_writer.writerow([prop, value, form])                   
+                
+                    all_subj.add(prop)
                 except BaseException as e:
                     err_file = out_folder / "_err.log"
                     lock_file = out_folder / "_err.log.lock"
@@ -92,7 +107,7 @@ def _extract_subjects(file: Path, chunk_start: int, chunk_end: int, size: int, o
                             err_f.write(line + " || Error: " + str(e) + "\n")
                 pbar.update(len(line.encode("utf-8")))
 
-    return all_props
+    return all_subj
 
 
 def _get_chunks(file: Path, out: Path) -> list:
