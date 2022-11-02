@@ -5,7 +5,7 @@ from typing import Any
 from tqdm.auto import tqdm
 import re
 
-SPECIAL_PROPERTIES = ["url","x","y"]
+SPECIAL_PROPERTIES = ["url","x","y","image"]
 
 def find_matches(src_props: set, trg_props: set, src_lang: str, trg_lang: str) -> list:
     """finds all matching propeerties between two languages"""
@@ -62,7 +62,7 @@ def find_entity_matches(src_props: list, trg_props: list, src_lang: str, trg_lan
 
     all_matches = []
 
-    for s in range(2):
+    for s in range(1):
         split_args = []
         trg_dict = _get_split_dict(trg_splits[s], trg_lang)
         for idx, src_split in enumerate(src_splits):
@@ -74,6 +74,29 @@ def find_entity_matches(src_props: list, trg_props: list, src_lang: str, trg_lan
 
         for match_list in all_match_list:
             all_matches.extend(match_list)
+
+    return all_matches
+
+def find_single_entity_match(src_props: list, trg_ent: str, src_lang: str, trg_lang: str) -> set:
+    """finds all occurences where an entity of the source language matches an entity in the target language for a single entity"""
+
+    num_splits = mp.cpu_count()
+
+    src_splits = _split_list_equal(src_props, num_splits)
+
+    all_matches = []
+
+    split_args = []
+    trg_dict = _get_split_dict([trg_ent], trg_lang)
+    for idx, src_split in enumerate(src_splits):
+        split_args.append((src_split, trg_dict, src_lang, trg_lang, idx+1))
+
+    tqdm.set_lock(mp.RLock())
+    with mp.Pool(processes=mp.cpu_count(), initializer=tqdm.set_lock, initargs=(tqdm.get_lock(),)) as pool:
+        all_match_list = pool.starmap(_find_entity_matches, split_args)
+
+    for match_list in all_match_list:
+        all_matches.extend(match_list)
 
     return all_matches
 
@@ -100,7 +123,7 @@ def _get_split_dict(prop_list: list, lang: str) -> dict:
                             trg_entities.append([row[0],row[1]])
 
                 prop_dict[prop] = trg_entities
-                # TODO: add translation of target entitiy to source language here
+                # TODO: add translation of target entity to source language here
             except:
                 continue
 
@@ -155,7 +178,7 @@ def _find_entity_matches(src_props: list, trg_lang_props: dict, src_lang: str, t
     return matched_props
 
 def clean_prop_list(props: set) -> set:
-    """remove properties from the property list, that are very likely parsing errors"""
+    """remove properties from the property list that are very likely parsing errors"""
     cleaned_props = set()
 
     for prop in props:
