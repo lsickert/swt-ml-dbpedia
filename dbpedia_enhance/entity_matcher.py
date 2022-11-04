@@ -2,6 +2,7 @@ import os
 import os.path
 import csv
 
+
 def find_direct_matches(src_subj: set, trg_subj: set) -> set:
     """ find all entities in two sets where the names are equal"""
     return set.intersection(src_subj, trg_subj)

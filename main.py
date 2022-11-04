@@ -32,10 +32,10 @@ if __name__ == "__main__":
 
     lang_files = [src_lang_link, trg_lang_link]
 
-    #replace this with ALL_LANG_FILES to run download for all considered languages
+    # replace this with ALL_LANG_FILES to run download for all considered languages
     filenames = dat_util.get_data(lang_files)
 
-    #TODO: write this in a better way
+    # TODO: write this in a better way
     src_props = set()
     src_entities = set()
     trg_props = set()
@@ -47,7 +47,6 @@ if __name__ == "__main__":
         else:
             trg_props = property_extractor.extract_properties(fname)
             trg_entities = entity_extractor_new.extract_subjects(fname)
-        #property_extractor.extract_properties(fname)
-        #entity_extractor_new.extract_subjects(fname)
 
-    print(property_matcher.find_matches(src_props, trg_props, options.src_lang, options.trg_lang))
+    print(property_matcher.find_matches(
+        src_props, trg_props, options.src_lang, options.trg_lang))

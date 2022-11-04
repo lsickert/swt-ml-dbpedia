@@ -16,7 +16,7 @@ def extract_subjects(file: str):
 
     lang_code = get_lang_code(file)
 
-    out_path = DATA_FOLDER / lang_code
+    out_path = DATA_FOLDER / f"{lang_code}_sub"
 
     _check_dir_exists(out_path)
 

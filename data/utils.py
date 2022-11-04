@@ -47,7 +47,7 @@ def _get_file(url: str, force_redownload: bool = False, pid=None) -> str:
 
 def _download_file(url: str, filename: str, pid) -> None:
     """downloads a file from dbpedia"""
-    with requests.get(url, stream=True) as res:
+    with requests.get(url, stream=True, timeout=5) as res:
         if res.status_code != 200:
             res.raise_for_status()
             raise RuntimeError(f"{url} returned {res.status_code} status")

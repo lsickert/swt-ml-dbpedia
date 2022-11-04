@@ -58,7 +58,7 @@ def create_rdf_prop(prop: str, lang: str) -> str:
     return f"<http://{lang}.dbpedia.org/property/{prop}>"
 
 
-def create_rdf_value(val: str, type: str, lang: str = None) -> str:
+def create_rdf_value(val: str, typ: str, lang: str = None) -> str:
     """Creates an rdf-conform dbpedia value form the raw data"""
     if type == "instance":
         return f"<http://{lang}.dbpedia.org/resource/{val}>"
@@ -67,4 +67,4 @@ def create_rdf_value(val: str, type: str, lang: str = None) -> str:
     elif type == "other":
         return val
     else:
-        return f"\"{val}\"^^<http://www.w3.org/2001/XMLSchema#{type}>"
+        return f"\"{val}\"^^<http://www.w3.org/2001/XMLSchema#{typ}>"

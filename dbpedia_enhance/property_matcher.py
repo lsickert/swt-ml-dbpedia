@@ -5,7 +5,8 @@ from typing import Any
 from tqdm.auto import tqdm
 import re
 
-SPECIAL_PROPERTIES = ["url","x","y","image"]
+SPECIAL_PROPERTIES = ["url", "x", "y", "image"]
+
 
 def find_matches(src_props: set, trg_props: set, src_lang: str, trg_lang: str) -> list:
     """finds all matching propeerties between two languages"""
@@ -16,7 +17,7 @@ def find_matches(src_props: set, trg_props: set, src_lang: str, trg_lang: str) -
     direct_matches = find_direct_matches(src_props, trg_props)
     print(f"### {len(direct_matches)} found")
 
-    # remove all direct matches from target set to make them smaller
+    # remove all direct matches from target set to make it smaller
     for match in direct_matches:
         matches.append((match, match))
         trg_props.discard(match)
@@ -77,6 +78,7 @@ def find_entity_matches(src_props: list, trg_props: list, src_lang: str, trg_lan
 
     return all_matches
 
+
 def find_single_entity_match(src_props: list, trg_ent: str, src_lang: str, trg_lang: str) -> set:
     """finds all occurences where an entity of the source language matches an entity in the target language for a single entity"""
 
@@ -120,7 +122,7 @@ def _get_split_dict(prop_list: list, lang: str) -> dict:
 
                     for row in csv_trg_reader:
                         if not row[0] == "subject":
-                            trg_entities.append([row[0],row[1]])
+                            trg_entities.append([row[0], row[1]])
 
                 prop_dict[prop] = trg_entities
                 # TODO: add translation of target entity to source language here
@@ -139,7 +141,7 @@ def _find_entity_matches(src_props: list, trg_lang_props: dict, src_lang: str, t
 
     def compare_entities(src_ents, trg_ents):
         # TODO: figure out how to handle multiple matching properties
-        max_matches = 0.8 * min(len(src_ents),len(trg_ents))
+        max_matches = 0.8 * min(len(src_ents), len(trg_ents))
         matches = 0
 
         for trg_ent in trg_ents:
@@ -164,7 +166,7 @@ def _find_entity_matches(src_props: list, trg_lang_props: dict, src_lang: str, t
                     csv_src_reader = csv.reader(csv_src_file)
                     for row in csv_src_reader:
                         if not row[0] == "subject":
-                            src_entities.append([row[0],row[1]])
+                            src_entities.append([row[0], row[1]])
 
                 for prop, entities in trg_lang_props.items():
 
@@ -177,12 +179,13 @@ def _find_entity_matches(src_props: list, trg_lang_props: dict, src_lang: str, t
 
     return matched_props
 
+
 def clean_prop_list(props: set) -> set:
     """remove properties from the property list that are very likely parsing errors"""
     cleaned_props = set()
 
     for prop in props:
-        #remove encapsulated properties
+        # remove encapsulated properties
         if prop.startswith("\""):
             continue
         # anything with a % inside is very likely wrongly parsed formatting
@@ -196,8 +199,9 @@ def clean_prop_list(props: set) -> set:
             continue
 
         cleaned_props.add(prop)
-    
+
     return cleaned_props
+
 
 def _is_in_2d_list(l: list, val: Any, trg_col: int = None) -> bool:
     """returns True if a value is found in a 2-dimensional list, otherwise returns false"""
