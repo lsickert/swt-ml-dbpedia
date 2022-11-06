@@ -1,7 +1,7 @@
 import argparse
 import re
 import data.utils as dat_util
-from dbpedia_enhance import property_extractor, entity_extractor_new, property_matcher
+from dbpedia_enhance import property_extractor, entity_extractor_new, property_matcher, translate_entity_new
 
 parser = argparse.ArgumentParser(prog="DBpedia Property Enhancer",
                                  description="This program will enhance dbpedia coverage by bidirectionally matching missing properties between two languages.")
@@ -23,30 +23,36 @@ ALL_LANG_FILES = [
     "https://databus.dbpedia.org/dbpedia/generic/infobox-properties/2022.03.01/infobox-properties_lang=nl.ttl.bz2"
 ]
 
+# if __name__ == "__main__":
+#     translate_entity_new.run_translate()
 if __name__ == "__main__":
 
-    options = parser.parse_args()
+    # options = parser.parse_args()
 
-    src_lang_link = f"https://databus.dbpedia.org/dbpedia/generic/infobox-properties/{options.version}/infobox-properties_lang={options.src_lang}.ttl.bz2"
-    trg_lang_link = f"https://databus.dbpedia.org/dbpedia/generic/infobox-properties/{options.version}/infobox-properties_lang={options.trg_lang}.ttl.bz2"
+    # src_lang_link = f"https://databus.dbpedia.org/dbpedia/generic/infobox-properties/{options.version}/infobox-properties_lang={options.src_lang}.ttl.bz2"
+    # trg_lang_link = f"https://databus.dbpedia.org/dbpedia/generic/infobox-properties/{options.version}/infobox-properties_lang={options.trg_lang}.ttl.bz2"
 
-    lang_files = [src_lang_link, trg_lang_link]
+    # lang_files = [src_lang_link, trg_lang_link]
 
-    # replace this with ALL_LANG_FILES to run download for all considered languages
-    filenames = dat_util.get_data(lang_files)
+    # # replace this with ALL_LANG_FILES to run download for all considered languages
+    # filenames = dat_util.get_data(lang_files)
 
-    # TODO: write this in a better way
-    src_props = set()
-    src_entities = set()
-    trg_props = set()
-    trg_entities = set()
-    for fname in filenames:
-        if re.search(f"{options.src_lang}.ttl", fname):
-            src_props = property_extractor.extract_properties(fname)
-            src_entities = entity_extractor_new.extract_subjects(fname)
-        else:
-            trg_props = property_extractor.extract_properties(fname)
-            trg_entities = entity_extractor_new.extract_subjects(fname)
+    # # TODO: write this in a better way
+    # src_props = set()
+    # src_entities = set()
+    # trg_props = set()
+    # trg_entities = set()
+    # for fname in filenames:
+    #     if re.search(f"{options.src_lang}.ttl", fname):
+    #         src_props = property_extractor.extract_properties(fname)
+    #         src_entities = entity_extractor_new.extract_subjects(fname)
+    #     else:
+    #         trg_props = property_extractor.extract_properties(fname)
+    #         trg_entities = entity_extractor_new.extract_subjects(fname)
 
-    print(property_matcher.find_matches(
-        src_props, trg_props, options.src_lang, options.trg_lang))
+    # print(property_matcher.find_matches(
+    #     src_props, trg_props, options.src_lang, options.trg_lang))
+
+
+    property_extractor.extract_properties("infobox-properties_lang=de.ttl","country","Kategorie:Staat in Europa")
+    entity_extractor_new.extract_subjects("infobox-properties_lang=de.ttl","country","Kategorie:Staat in Europa")

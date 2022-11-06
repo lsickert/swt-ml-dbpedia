@@ -22,7 +22,7 @@ def translate_entities(entities: set, src_lang: str, langcodes: list) -> list:
 def translate_entity(entity_list: Union[list, str], src_lang: str, langcodes: list) -> dict:
     """retrive translations for a single entity"""
 
-    url = f"https://{src_lang}.wikipedia.org/w/api.php"
+    base_url = f"https://{src_lang}.wikipedia.org/w/api.php"
 
     if isinstance(entity_list, str):
         query = entity_list
@@ -43,14 +43,14 @@ def translate_entity(entity_list: Union[list, str], src_lang: str, langcodes: li
         "format": "json"
     }
 
-    with requests.get(url, params=params, timeout=5) as res:
+    with requests.get(base_url, params=params, timeout=5) as res:
         if res.status_code != 200:
             # catch rate limiting errors and try to distribute load a bit better
             if res.status_code == 429:
                 time.sleep(random.randint(1, 10))
                 return translate_entity(entity_list, src_lang, langcodes)
             res.raise_for_status()
-            raise RuntimeError(f"{url} returned {res.status_code} status")
+            raise RuntimeError(f"{base_url} returned {res.status_code} status")
 
         data = res.json()
 
