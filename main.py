@@ -41,8 +41,8 @@ if __name__ == "__main__":
     # replace this with ALL_LANG_FILES to run download for all considered languages
     filenames = dat_util.get_data(lang_files)
 
-    subj_translations = translate_entity_new.get_translation_file(
-        filenames, options.out_suffix)
+    #subj_translations = translate_entity_new.get_translation_file(
+    #    filenames, options.out_suffix)
 
     # TODO: write this in a better way
     src_props = set()
@@ -62,7 +62,7 @@ if __name__ == "__main__":
                 fname, options.out_suffix, [options.trg_cat])
 
     print(property_matcher.find_matches(
-        src_props, trg_props, options.src_lang, options.trg_lang))
+        src_props, trg_props, options.src_lang, options.trg_lang, options.out_suffix))
 
     #property_extractor.extract_properties("infobox-properties_lang=de.ttl","country","Kategorie:Staat in Europa")
     #entity_extractor_new.extract_subjects("infobox-properties_lang=de.ttl","country","Kategorie:Staat in Europa")

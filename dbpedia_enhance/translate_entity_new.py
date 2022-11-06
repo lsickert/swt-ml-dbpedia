@@ -81,7 +81,7 @@ def get_translation_file(filelist: list, suffix: Optional[str] = None):
         file_name = file_name + "_" + lang_code
 
     if suffix is not None:
-        file_name = file_name * "_" + suffix
+        file_name = file_name + "_" + suffix
 
     trans_file = DATA_FOLDER / f"{file_name}_translations.csv"
 
