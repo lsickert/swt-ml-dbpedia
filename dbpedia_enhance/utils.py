@@ -73,35 +73,36 @@ def create_rdf_value(val: str, typ: str, lang: str = None) -> str:
         return f"\"{val}\"^^<http://www.w3.org/2001/XMLSchema#{typ}>"
 
 
-def get_category_members(category: str, lang: str) -> list:
+def get_category_members(category_list: list, lang: str) -> list:
     """returns a list of entity names that are members of a given category."""
 
     base_url = f"https://{lang}.wikipedia.org/w/api.php"
 
-    params = {
-        "action": "query",
-        "cmtitle": category,
-        "list": "categorymembers",
-        "cmlimit": "max",
-        "cmtype": "page",
-        "formatversion": "2",
-        "format": "json"
-    }
+    results = set()
 
-    with requests.get(base_url, params=params, timeout=5) as res:
-        if res.status_code != 200:
-            # catch rate limiting errors and try to distribute load a bit better
-            if res.status_code == 429:
-                time.sleep(random.randint(1, 10))
-                return get_category_members(category, lang)
-            res.raise_for_status()
-            raise RuntimeError(f"{base_url} returned {res.status_code} status")
+    for category in category_list:
+        params = {
+            "action": "query",
+            "cmtitle": category,
+            "list": "categorymembers",
+            "cmlimit": "max",
+            "cmtype": "page",
+            "formatversion": "2",
+            "format": "json"
+        }
 
-        data = res.json()
+        with requests.get(base_url, params=params, timeout=5) as res:
+            if res.status_code != 200:
+                # catch rate limiting errors and try to distribute load a bit better
+                if res.status_code == 429:
+                    time.sleep(random.randint(1, 10))
+                    return get_category_members(category, lang)
+                res.raise_for_status()
+                raise RuntimeError(f"{base_url} returned {res.status_code} status")
 
-        results = []
+            data = res.json()
 
-        for item in data["query"]["categorymembers"]:
-            results.append(item["title"].replace(" ", "_"))
+            for item in data["query"]["categorymembers"]:
+                results.add(item["title"].replace(" ", "_"))
 
-    return results
+    return list(results)

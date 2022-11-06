@@ -163,7 +163,7 @@ def _find_entity_matches(src_props: list, trg_lang_props: dict, src_lang: str, p
                         return True
 
         return False
-    
+
     src_path_name = src_lang
 
     if suffix is not None:
