@@ -4,7 +4,9 @@ from tqdm.auto import tqdm
 import multiprocessing as mp
 import time
 import random
-from typing import Union
+from typing import Union, Optional
+from . import utils, entity_extractor_new
+from data.utils import DATA_FOLDER
 
 
 def translate_entities(entities: set, src_lang: str, langcodes: list) -> list:
@@ -69,27 +71,33 @@ def translate_entity(entity_list: Union[list, str], src_lang: str, langcodes: li
         return results
 
 
-def run_translate():
+def get_translation_file(filelist: list, suffix: Optional[str] = None):
 
-    from . import utils, entity_extractor_new
-    from data.utils import DATA_FOLDER
+    lang_codes = []
+    file_name = "subj"
+    for fname in filelist:
+        lang_code = utils.get_lang_code(fname)
+        lang_codes.append(lang_code)
+        file_name = file_name + "_" + lang_code
 
-    trans_file = DATA_FOLDER / "subj_translations.csv"
+    if suffix is not None:
+        file_name = file_name * "_" + suffix
 
-    ALL_LANG_FILES = [
-        "infobox-properties_lang=de.ttl",
-        "infobox-properties_lang=en.ttl",
-        "infobox-properties_lang=nl.ttl"
-    ]
+    trans_file = DATA_FOLDER / f"{file_name}_translations.csv"
 
     all_subj = set()
-    lang_codes = []
-    for fname in ALL_LANG_FILES:
-        lang_codes.append(utils.get_lang_code(fname))
+
+    if trans_file.exists():
+        with open(trans_file, "r", newline="", encoding="utf-8") as csvfile:
+            csvreader = csv.reader(csvfile)
+            for row in csvreader:
+                all_subj.update(row)
+
+        return all_subj
 
     num_splits = mp.cpu_count()
 
-    for fname in ALL_LANG_FILES:
+    for fname in filelist:
         lang = utils.get_lang_code(fname)
         subj_split = _split_set_equal(
             entity_extractor_new.extract_subjects(fname), num_splits)
@@ -115,6 +123,8 @@ def run_translate():
             for sub in all_subj:
                 out_writer.writerow(list(sub))
                 pbar.update(1)
+
+    return all_subj
 
 
 def _run_translate(subj: set, lang: str, trg_langs: list, lang_codes: list, pid: int):
@@ -159,10 +169,3 @@ def _split_set_equal(l: set, s: int) -> list:
     c = len(l) // s
     r = len(l) % s
     return [l[n * c + min(n, r):(n+1) * c + min(n+1, r)] for n in range(s)]
-
-
-if __name__ == "__main__":
-
-    resp = translate_entity(["Mychajlo_Wosnjak", "Johanneskirche_(Kornat)", "Gerhard_R._Steinhäuser", "Ludwigstraße_8_(Bad_Kissingen)", "Mathias_Podhorsky",
-                            "Jean-François_Boch", "Ulrich_Schumacher_(Kunsthistoriker)", "Willy_Großmann", "Männerwohnheim_Meldemannstraße"], "de", ["en", "nl"])
-    print(resp)

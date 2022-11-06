@@ -1,14 +1,14 @@
 import multiprocessing as mp
 from data.utils import DATA_FOLDER
 import csv
-from typing import Any
+from typing import Any, Optional
 from tqdm.auto import tqdm
 import re
 
 SPECIAL_PROPERTIES = ["url", "x", "y", "image"]
 
 
-def find_matches(src_props: set, trg_props: set, src_lang: str, trg_lang: str) -> list:
+def find_matches(src_props: set, trg_props: set, src_lang: str, trg_lang: str, suffix: Optional[str] = None) -> list:
     """finds all matching propeerties between two languages"""
     matches = []
     src_props = clean_prop_list(src_props)
@@ -24,7 +24,7 @@ def find_matches(src_props: set, trg_props: set, src_lang: str, trg_lang: str) -
 
     print("### finding entity matches")
     entity_matches = find_entity_matches(
-        list(src_props), list(trg_props), src_lang, trg_lang)
+        list(src_props), list(trg_props), src_lang, trg_lang, suffix)
     print(f"### {len(entity_matches)} enitity matches found")
 
     for match in entity_matches:
@@ -32,7 +32,12 @@ def find_matches(src_props: set, trg_props: set, src_lang: str, trg_lang: str) -
         src_props.discard(match[0])
         trg_props.discard(match[1])
 
-    out_file = DATA_FOLDER / f"{src_lang}-{trg_lang}_matches.csv"
+    out_name = f"{src_lang}-{trg_lang}"
+
+    if suffix is not None:
+        out_name = out_name + "_" + suffix
+
+    out_file = DATA_FOLDER / f"{out_name}_matches.csv"
 
     with open(out_file, "w", encoding="utf-8", newline="") as out:
         out_writer = csv.writer(out)
@@ -53,7 +58,7 @@ def find_direct_matches(src_props: set, trg_props: set) -> set:
     return set.intersection(src_props, trg_props)
 
 
-def find_entity_matches(src_props: list, trg_props: list, src_lang: str, trg_lang: str) -> set:
+def find_entity_matches(src_props: list, trg_props: list, src_lang: str, trg_lang: str, suffix: Optional[str] = None) -> set:
     """finds all occurences where an entity of the source language matches an entity in the target language"""
 
     num_splits = mp.cpu_count()
@@ -63,11 +68,11 @@ def find_entity_matches(src_props: list, trg_props: list, src_lang: str, trg_lan
 
     all_matches = []
 
-    for s in range(1):
+    for trg_split in trg_splits:
         split_args = []
-        trg_dict = _get_split_dict(trg_splits[s], trg_lang)
+        trg_dict = _get_split_dict(trg_split, trg_lang, suffix)
         for idx, src_split in enumerate(src_splits):
-            split_args.append((src_split, trg_dict, src_lang, trg_lang, idx+1))
+            split_args.append((src_split, trg_dict, src_lang, idx+1, suffix))
 
         tqdm.set_lock(mp.RLock())
         with mp.Pool(processes=mp.cpu_count(), initializer=tqdm.set_lock, initargs=(tqdm.get_lock(),)) as pool:
@@ -79,7 +84,7 @@ def find_entity_matches(src_props: list, trg_props: list, src_lang: str, trg_lan
     return all_matches
 
 
-def find_single_entity_match(src_props: list, trg_ent: str, src_lang: str, trg_lang: str) -> set:
+def find_single_entity_match(src_props: list, trg_ent: str, src_lang: str, trg_lang: str, suffix: Optional[str] = None) -> set:
     """finds all occurences where an entity of the source language matches an entity in the target language for a single entity"""
 
     num_splits = mp.cpu_count()
@@ -89,9 +94,9 @@ def find_single_entity_match(src_props: list, trg_ent: str, src_lang: str, trg_l
     all_matches = []
 
     split_args = []
-    trg_dict = _get_split_dict([trg_ent], trg_lang)
+    trg_dict = _get_split_dict([trg_ent], trg_lang, suffix)
     for idx, src_split in enumerate(src_splits):
-        split_args.append((src_split, trg_dict, src_lang, trg_lang, idx+1))
+        split_args.append((src_split, trg_dict, src_lang, idx+1, suffix))
 
     tqdm.set_lock(mp.RLock())
     with mp.Pool(processes=mp.cpu_count(), initializer=tqdm.set_lock, initargs=(tqdm.get_lock(),)) as pool:
@@ -103,9 +108,14 @@ def find_single_entity_match(src_props: list, trg_ent: str, src_lang: str, trg_l
     return all_matches
 
 
-def _get_split_dict(prop_list: list, lang: str) -> dict:
+def _get_split_dict(prop_list: list, lang: str, suffix: Optional[str] = None) -> dict:
 
-    prop_path = DATA_FOLDER / lang
+    path_name = lang
+
+    if suffix is not None:
+        path_name = path_name + "_" + suffix
+
+    prop_path = DATA_FOLDER / path_name
 
     size = len(prop_list)
 
@@ -126,13 +136,13 @@ def _get_split_dict(prop_list: list, lang: str) -> dict:
 
                 prop_dict[prop] = trg_entities
                 # TODO: add translation of target entity to source language here
-            except:
+            except Exception:
                 continue
 
     return prop_dict
 
 
-def _find_entity_matches(src_props: list, trg_lang_props: dict, src_lang: str, trg_lang: str, pid: int) -> list:
+def _find_entity_matches(src_props: list, trg_lang_props: dict, src_lang: str, pid: int, suffix: Optional[str] = None) -> list:
     """find an entity with a given property in one language that also exists in another language"""
 
     matched_props = []
@@ -153,10 +163,15 @@ def _find_entity_matches(src_props: list, trg_lang_props: dict, src_lang: str, t
                         return True
 
         return False
+    
+    src_path_name = src_lang
+
+    if suffix is not None:
+        src_path_name = src_path_name + "_" + suffix
 
     with tqdm(total=size, desc=desc, position=pid) as pbar:
         for src_property in src_props:
-            src_path = DATA_FOLDER / src_lang / f"{src_property}.csv"
+            src_path = DATA_FOLDER / src_path_name / f"{src_property}.csv"
 
             src_entities = []
             pbar.update(1)
@@ -174,7 +189,7 @@ def _find_entity_matches(src_props: list, trg_lang_props: dict, src_lang: str, t
                         matched_props.append((src_property, prop))
                         break
 
-            except:
+            except Exception:
                 continue
 
     return matched_props

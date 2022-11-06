@@ -9,7 +9,7 @@ from .utils import extract_prop_name, extract_subj_name, extract_value, get_lang
 from typing import Optional
 
 
-def extract_properties(file: str, suffix: Optional[str] = None, use_category: str = None):
+def extract_properties(file: str, suffix: Optional[str] = None, use_category: Optional[str] = None):
     """
     extract all properties from a language file and stores the results in individual lists.
     Additionally a single csv file containing all distinct property names is created.
@@ -106,7 +106,7 @@ def _extract_properties(file: Path, chunk_start: int, chunk_end: int, size: int,
                                     out_writer.writerow([subject, value, form])
 
                         all_props.add(prop)
-                except BaseException as e:
+                except Exception as e:
                     err_file = out_folder / "_err.log"
                     lock_file = out_folder / "_err.log.lock"
                     lock = FileLock(str(lock_file))
