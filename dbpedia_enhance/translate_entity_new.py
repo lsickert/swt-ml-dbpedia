@@ -4,7 +4,7 @@ from tqdm.auto import tqdm
 import multiprocessing as mp
 import time
 import random
-from typing import Union, Optional
+from typing import Union, Optional, Tuple
 from . import utils, entity_extractor_new
 from data.utils import DATA_FOLDER
 
@@ -22,7 +22,7 @@ def translate_entities(entities: set, src_lang: str, langcodes: list) -> list:
 
 
 def translate_entity(entity_list: Union[list, str], src_lang: str, langcodes: list) -> dict:
-    """retrive translations for a single entity"""
+    """retrieve translations for a single entity"""
 
     base_url = f"https://{src_lang}.wikipedia.org/w/api.php"
 
@@ -49,7 +49,7 @@ def translate_entity(entity_list: Union[list, str], src_lang: str, langcodes: li
         if res.status_code != 200:
             # catch rate limiting errors and try to distribute load a bit better
             if res.status_code == 429:
-                time.sleep(random.randint(1, 10))
+                time.sleep(random.randint(1, 3))
                 return translate_entity(entity_list, src_lang, langcodes)
             res.raise_for_status()
             raise RuntimeError(f"{base_url} returned {res.status_code} status")
@@ -62,6 +62,7 @@ def translate_entity(entity_list: Union[list, str], src_lang: str, langcodes: li
             result = dict()
             result[src_lang] = item["title"].replace(" ", "_")
             if not "langlinks" in item.keys():
+                results.append(result)
                 continue
             for language_info in item["langlinks"]:
                 if language_info["lang"] in langcodes:
@@ -71,8 +72,29 @@ def translate_entity(entity_list: Union[list, str], src_lang: str, langcodes: li
         return results
 
 
-def get_translation_file(filelist: list, suffix: Optional[str] = None):
+def get_translations_from_file(fname: str) -> Tuple[list, set]:
+    """get all translations from a file"""
+    lang_codes = []
 
+    trans_file = DATA_FOLDER / fname
+
+    all_subj = set()
+
+    if trans_file.exists():
+        with open(trans_file, "r", newline="", encoding="utf-8") as csvfile:
+            csvreader = csv.reader(csvfile)
+            lang_codes = next(csvreader, None)
+            for row in csvreader:
+                all_subj.add(tuple(row))
+
+    return lang_codes, all_subj
+
+
+def get_translations(filelist: list, suffix: Optional[str] = None) -> Tuple[list, set]:
+    """
+    create a file containing all translations between two languages for further use.
+    Also returns the translations and language ordering for further use
+    """
     lang_codes = []
     file_name = "subj"
     for fname in filelist:
@@ -90,10 +112,11 @@ def get_translation_file(filelist: list, suffix: Optional[str] = None):
     if trans_file.exists():
         with open(trans_file, "r", newline="", encoding="utf-8") as csvfile:
             csvreader = csv.reader(csvfile)
+            lang_codes = next(csvreader, None)
             for row in csvreader:
-                all_subj.update(row)
+                all_subj.add(tuple(row))
 
-        return all_subj
+        return lang_codes, all_subj
 
     num_splits = mp.cpu_count()
 
@@ -124,7 +147,7 @@ def get_translation_file(filelist: list, suffix: Optional[str] = None):
                 out_writer.writerow(list(sub))
                 pbar.update(1)
 
-    return all_subj
+    return lang_codes, all_subj
 
 
 def _run_translate(subj: set, lang: str, trg_langs: list, lang_codes: list, pid: int):

@@ -41,7 +41,7 @@ if __name__ == "__main__":
     # replace this with ALL_LANG_FILES to run download for all considered languages
     filenames = dat_util.get_data(lang_files)
 
-    #subj_translations = translate_entity_new.get_translation_file(
+    #subj_translations = translate_entity_new.get_translations(
     #    filenames, options.out_suffix)
 
     # TODO: write this in a better way

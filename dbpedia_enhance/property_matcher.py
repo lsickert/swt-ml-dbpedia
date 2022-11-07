@@ -3,6 +3,7 @@ from data.utils import DATA_FOLDER
 import csv
 from typing import Any, Optional
 from tqdm.auto import tqdm
+from .translate_entity_new import get_translations_from_file, translate_entity
 import re
 
 SPECIAL_PROPERTIES = ["url", "x", "y", "image"]
@@ -32,7 +33,7 @@ def find_matches(src_props: set, trg_props: set, src_lang: str, trg_lang: str, s
         src_props.discard(match[0])
         trg_props.discard(match[1])
 
-    out_name = f"{src_lang}-{trg_lang}"
+    out_name = f"{src_lang}_{trg_lang}"
 
     if suffix is not None:
         out_name = out_name + "_" + suffix
@@ -52,6 +53,8 @@ def find_matches(src_props: set, trg_props: set, src_lang: str, trg_lang: str, s
         for prop in trg_props:
             out_writer.writerow(["", prop])
 
+    return matches
+
 
 def find_direct_matches(src_props: set, trg_props: set) -> set:
     """ find all properties in two sets where the property names are equal"""
@@ -70,7 +73,7 @@ def find_entity_matches(src_props: list, trg_props: list, src_lang: str, trg_lan
 
     for trg_split in trg_splits:
         split_args = []
-        trg_dict = _get_split_dict(trg_split, trg_lang, suffix)
+        trg_dict = _get_split_dict(trg_split, trg_lang, src_lang, suffix)
         for idx, src_split in enumerate(src_splits):
             split_args.append((src_split, trg_dict, src_lang, idx+1, suffix))
 
@@ -94,7 +97,7 @@ def find_single_entity_match(src_props: list, trg_ent: str, src_lang: str, trg_l
     all_matches = []
 
     split_args = []
-    trg_dict = _get_split_dict([trg_ent], trg_lang, suffix)
+    trg_dict = _get_split_dict([trg_ent], trg_lang, src_lang, suffix)
     for idx, src_split in enumerate(src_splits):
         split_args.append((src_split, trg_dict, src_lang, idx+1, suffix))
 
@@ -108,9 +111,21 @@ def find_single_entity_match(src_props: list, trg_ent: str, src_lang: str, trg_l
     return all_matches
 
 
-def _get_split_dict(prop_list: list, lang: str, suffix: Optional[str] = None) -> dict:
+def _get_split_dict(prop_list: list, trg_lang: str, src_lang: str, suffix: Optional[str] = None) -> dict:
 
-    path_name = lang
+    #lang_order, translations = get_translations_from_file(
+        #"subj_translations.csv")
+
+    #src_i = lang_order.index(src_lang)
+    #trg_i = lang_order.index(trg_lang)
+
+    #def _find_translation(ent: str) -> Optional[str]:
+
+        #for trans in translations:
+            #if trans[trg_i] == ent:
+                #return trans[src_i] if trans[src_i] != "" else None
+
+    path_name = trg_lang
 
     if suffix is not None:
         path_name = path_name + "_" + suffix
@@ -130,13 +145,35 @@ def _get_split_dict(prop_list: list, lang: str, suffix: Optional[str] = None) ->
                 with open(prop_path / f"{prop}.csv", "r", newline="", encoding="utf-8") as csv_trg_file:
                     csv_trg_reader = csv.reader(csv_trg_file)
 
+                    # skip first row with headers
+                    next(csv_trg_reader, None)
                     for row in csv_trg_reader:
-                        if not row[0] == "subject":
-                            trg_entities.append([row[0], row[1]])
+                        trans_row = []
+                        val_trans = None
+                        subj_trans = translate_entity([row[0]], trg_lang, [src_lang])
+                        subj_trans = subj_trans[0].get(trg_lang, None)
+                        #subj_trans = _find_translation(row[0])
+                        if row[2] == "instance":
+                            #val_trans = _find_translation(row[1])
+                            val_trans = translate_entity([row[1]], trg_lang, [src_lang])
+                            val_trans = val_trans[0].get(trg_lang, None)
+
+                        if subj_trans is not None:
+                            trans_row.append(subj_trans)
+                        else:
+                            trans_row.append(row[0])
+
+                        if val_trans is not None:
+                            trans_row.append(val_trans)
+                        else:
+                            trans_row.append(row[1])
+
+                        trg_entities.append(trans_row)
 
                 prop_dict[prop] = trg_entities
-                # TODO: add translation of target entity to source language here
-            except Exception:
+
+            except Exception as e:
+                print(str(e))
                 continue
 
     return prop_dict
@@ -179,9 +216,11 @@ def _find_entity_matches(src_props: list, trg_lang_props: dict, src_lang: str, p
             try:
                 with open(src_path, "r", newline="", encoding="utf-8") as csv_src_file:
                     csv_src_reader = csv.reader(csv_src_file)
+
+                    # skip first row with headers
+                    next(csv_src_reader, None)
                     for row in csv_src_reader:
-                        if not row[0] == "subject":
-                            src_entities.append([row[0], row[1]])
+                        src_entities.append([row[0], row[1]])
 
                 for prop, entities in trg_lang_props.items():
 
@@ -189,7 +228,8 @@ def _find_entity_matches(src_props: list, trg_lang_props: dict, src_lang: str, p
                         matched_props.append((src_property, prop))
                         break
 
-            except Exception:
+            except Exception as e:
+                print(str(e))
                 continue
 
     return matched_props
