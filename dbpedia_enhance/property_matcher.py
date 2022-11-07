@@ -3,7 +3,7 @@ from data.utils import DATA_FOLDER
 import csv
 from typing import Any, Optional
 from tqdm.auto import tqdm
-from .translate_entity_new import get_translations_from_file, translate_entity
+from .translate_entity_new import translate_entity
 import re
 
 SPECIAL_PROPERTIES = ["url", "x", "y", "image"]
@@ -113,18 +113,6 @@ def find_single_entity_match(src_props: list, trg_ent: str, src_lang: str, trg_l
 
 def _get_split_dict(prop_list: list, trg_lang: str, src_lang: str, suffix: Optional[str] = None) -> dict:
 
-    #lang_order, translations = get_translations_from_file(
-        #"subj_translations.csv")
-
-    #src_i = lang_order.index(src_lang)
-    #trg_i = lang_order.index(trg_lang)
-
-    #def _find_translation(ent: str) -> Optional[str]:
-
-        #for trans in translations:
-            #if trans[trg_i] == ent:
-                #return trans[src_i] if trans[src_i] != "" else None
-
     path_name = trg_lang
 
     if suffix is not None:
@@ -150,13 +138,15 @@ def _get_split_dict(prop_list: list, trg_lang: str, src_lang: str, suffix: Optio
                     for row in csv_trg_reader:
                         trans_row = []
                         val_trans = None
-                        subj_trans = translate_entity([row[0]], trg_lang, [src_lang])
-                        subj_trans = subj_trans[0].get(trg_lang, None)
+                        subj_trans = translate_entity(
+                            [row[0]], trg_lang, [src_lang])
+                        subj_trans = subj_trans[0].get(src_lang, None)
                         #subj_trans = _find_translation(row[0])
                         if row[2] == "instance":
                             #val_trans = _find_translation(row[1])
-                            val_trans = translate_entity([row[1]], trg_lang, [src_lang])
-                            val_trans = val_trans[0].get(trg_lang, None)
+                            val_trans = translate_entity(
+                                [row[1]], trg_lang, [src_lang])
+                            val_trans = val_trans[0].get(src_lang, None)
 
                         if subj_trans is not None:
                             trans_row.append(subj_trans)
@@ -196,7 +186,7 @@ def _find_entity_matches(src_props: list, trg_lang_props: dict, src_lang: str, p
                 if src_ent == trg_ent:
                     matches += 1
 
-                    if matches == max_matches:
+                    if matches >= max_matches:
                         return True
 
         return False
