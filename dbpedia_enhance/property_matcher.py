@@ -139,29 +139,71 @@ def _get_split_dict(prop_list: list, trg_lang: str, src_lang: str, suffix: Optio
                     subj_list = []
                     form_list = []
                     for row in csv_trg_reader:
-                        trans_row = []
-                        val_trans = None
+                        subj_list.append(row[0])
+                        val_list.append(row[1])
+                        form_list.append(row[2])
+
+                        if len(subj_list) == 40:
+
+                            subj_trans = translate_entity(
+                                subj_list, trg_lang, [src_lang])
+
+                            for idx, subj in enumerate(subj_trans):
+                                trans = subj.get(src_lang)
+                                if trans is not None:
+                                    subj_list[idx] = trans
+
+                            val_trans_src = []
+                            val_trans_ids = []
+                            for idx, val in enumerate(val_list):
+                                if form_list[idx] == "instance":
+                                    val_trans_src.append(val)
+                                    val_trans_ids.append(idx)
+
+                            if len(val_trans_src) > 0:
+                                val_trans = translate_entity(
+                                    val_trans_src, trg_lang, [src_lang])
+
+                                for idx, idy in enumerate(val_trans_ids):
+                                    val_list[idy] = val_trans[idx].get(
+                                        src_lang, val_list[idy])
+
+                            for idx, subj in enumerate(subj_list):
+                                trg_entities.append(
+                                    [subj, val_list[idx], form_list[idx]])
+
+                            val_list = []
+                            subj_list = []
+                            form_list = []
+
+                    if len(subj_list) > 0:
+
                         subj_trans = translate_entity(
-                            [row[0]], trg_lang, [src_lang])
-                        subj_trans = subj_trans[0].get(src_lang, None)
-                        #subj_trans = _find_translation(row[0])
-                        if row[2] == "instance":
-                            #val_trans = _find_translation(row[1])
+                            subj_list, trg_lang, [src_lang])
+
+                        for idx, subj in enumerate(subj_trans):
+                            trans = subj.get(src_lang)
+                            if trans is not None:
+                                subj_list[idx] = trans
+
+                        val_trans_src = []
+                        val_trans_ids = []
+                        for idx, val in enumerate(val_list):
+                            if form_list[idx] == "instance":
+                                val_trans_src.append(val)
+                                val_trans_ids.append(idx)
+
+                        if len(val_trans_src) > 0:
                             val_trans = translate_entity(
-                                [row[1]], trg_lang, [src_lang])
-                            val_trans = val_trans[0].get(src_lang, None)
+                                val_trans_src, trg_lang, [src_lang])
 
-                        if subj_trans is not None:
-                            trans_row.append(subj_trans)
-                        else:
-                            trans_row.append(row[0])
+                            for idx, idy in enumerate(val_trans_ids):
+                                val_list[idy] = val_trans[idx].get(
+                                    src_lang, val_list[idy])
 
-                        if val_trans is not None:
-                            trans_row.append(val_trans)
-                        else:
-                            trans_row.append(row[1])
-
-                        trg_entities.append(trans_row)
+                        for idx, subj in enumerate(subj_list):
+                            trg_entities.append(
+                                [subj, val_list[idx], form_list[idx]])
 
                 prop_dict[prop] = trg_entities
 
@@ -181,7 +223,7 @@ def _find_entity_matches(src_props: list, trg_lang_props: dict, src_lang: str, p
 
     def compare_entities(src_ents, trg_ents):
         # TODO: figure out how to handle multiple matching properties
-        max_matches = 0.5 * min(len(src_ents), len(trg_ents))
+        max_matches = 0.6 * min(len(src_ents), len(trg_ents))
         matches = 0
 
         for trg_ent in trg_ents:

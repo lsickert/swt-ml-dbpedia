@@ -16,7 +16,7 @@ def translate_entities(entities: set, src_lang: str, langcodes: list) -> list:
 
     l = len(entities)
 
-    for e in range(0,l,45):
+    for e in range(0, l, 45):
         translation = translate_entity(entities[e:e+45], src_lang, langcodes)
         translations.append(translation)
 
@@ -39,7 +39,7 @@ def translate_entity(entity_list: Union[list, str], src_lang: str, langcodes: li
         if len(entity_list) > 1:
             for i in range(1, len(entity_list)):
                 query += f"|{entity_list[i]}"
-        
+
         results = [None for i in range(len(entity_list))]
 
     params = {
@@ -51,7 +51,7 @@ def translate_entity(entity_list: Union[list, str], src_lang: str, langcodes: li
         "format": "json"
     }
 
-    #handle recursion
+    # handle recursion
     if continue_val is not None:
         params["llcontinue"] = continue_val
 
@@ -66,9 +66,10 @@ def translate_entity(entity_list: Union[list, str], src_lang: str, langcodes: li
                 # catch rate limiting errors and try to distribute load a bit better
                 if res.status_code == 429:
                     time.sleep(random.randint(1, 3))
-                    return translate_entity(entity_list, src_lang, langcodes, continue_val)
+                    return translate_entity(entity_list, src_lang, langcodes, continue_val, results)
                 res.raise_for_status()
-                raise RuntimeError(f"{base_url} returned {res.status_code} status")
+                raise RuntimeError(
+                    f"{base_url} returned {res.status_code} status")
 
             data = res.json()
 
@@ -76,26 +77,28 @@ def translate_entity(entity_list: Union[list, str], src_lang: str, langcodes: li
                 cont_req = False
 
             for item in data["query"]["pages"]:
-                res_idx = entity_list.index(item["title"].replace(" ", "_"))
-                if results[res_idx] is None:
-                    result = dict()
-                else:
-                    result = results[res_idx]
-                result[src_lang] = item["title"].replace(" ", "_")
-                if not "langlinks" in item.keys() and results[res_idx] is None:
-                    results[res_idx] = result
-                    continue
-                for language_info in item["langlinks"]:
-                    if language_info["lang"] in langcodes:
-                        result[language_info["lang"]
-                            ] = language_info["title"].replace(" ", "_")
-                results[res_idx] = result
-            
+                res_ids = [idx for idx, val in enumerate(
+                    entity_list) if val == item["title"].replace(" ", "_")]
+                for idx in res_ids:
+                    if results[idx] is None:
+                        result = dict()
+                    else:
+                        result = results[idx]
+                    result[src_lang] = item["title"].replace(" ", "_")
+                    if not "langlinks" in item.keys():
+                        if results[idx] is None:
+                            results[idx] = result
+                        continue
+                    for language_info in item["langlinks"]:
+                        if language_info["lang"] in langcodes:
+                            result[language_info["lang"]
+                                   ] = language_info["title"].replace(" ", "_")
+                    results[idx] = result
+
             if cont_req:
                 continue_val = data["continue"]["llcontinue"]
                 params["llcontinue"] = continue_val
-                
-            
+
     return results
 
 
