@@ -14,20 +14,24 @@ def translate_entities(entities: set, src_lang: str, langcodes: list) -> list:
 
     translations = []
 
-    for entity in entities:
-        translation = translate_entity(entity, src_lang, langcodes)
+    l = len(entities)
+
+    for e in range(0,l,45):
+        translation = translate_entity(entities[e:e+45], src_lang, langcodes)
         translations.append(translation)
 
     return translations
 
 
-def translate_entity(entity_list: Union[list, str], src_lang: str, langcodes: list) -> dict:
+def translate_entity(entity_list: Union[list, str], src_lang: str, langcodes: list, continue_val: Optional[str] = None, part_results: Optional[list] = None) -> dict:
     """retrieve translations for a single entity"""
 
     base_url = f"https://{src_lang}.wikipedia.org/w/api.php"
 
     if isinstance(entity_list, str):
         query = entity_list
+        entity_list = [entity_list]
+        results = [None]
     else:
 
         query = entity_list[0]
@@ -35,6 +39,8 @@ def translate_entity(entity_list: Union[list, str], src_lang: str, langcodes: li
         if len(entity_list) > 1:
             for i in range(1, len(entity_list)):
                 query += f"|{entity_list[i]}"
+        
+        results = [None for i in range(len(entity_list))]
 
     params = {
         "action": "query",
@@ -45,31 +51,52 @@ def translate_entity(entity_list: Union[list, str], src_lang: str, langcodes: li
         "format": "json"
     }
 
-    with requests.get(base_url, params=params, timeout=5) as res:
-        if res.status_code != 200:
-            # catch rate limiting errors and try to distribute load a bit better
-            if res.status_code == 429:
-                time.sleep(random.randint(1, 3))
-                return translate_entity(entity_list, src_lang, langcodes)
-            res.raise_for_status()
-            raise RuntimeError(f"{base_url} returned {res.status_code} status")
+    #handle recursion
+    if continue_val is not None:
+        params["llcontinue"] = continue_val
 
-        data = res.json()
+    if part_results is not None:
+        results = part_results
 
-        results = []
+    cont_req = True
 
-        for item in data["query"]["pages"]:
-            result = dict()
-            result[src_lang] = item["title"].replace(" ", "_")
-            if not "langlinks" in item.keys():
-                results.append(result)
-                continue
-            for language_info in item["langlinks"]:
-                if language_info["lang"] in langcodes:
-                    result[language_info["lang"]
-                           ] = language_info["title"].replace(" ", "_")
-            results.append(result)
-        return results
+    while cont_req:
+        with requests.get(base_url, params=params, timeout=5) as res:
+            if res.status_code != 200:
+                # catch rate limiting errors and try to distribute load a bit better
+                if res.status_code == 429:
+                    time.sleep(random.randint(1, 3))
+                    return translate_entity(entity_list, src_lang, langcodes, continue_val)
+                res.raise_for_status()
+                raise RuntimeError(f"{base_url} returned {res.status_code} status")
+
+            data = res.json()
+
+            if not "continue" in data.keys():
+                cont_req = False
+
+            for item in data["query"]["pages"]:
+                res_idx = entity_list.index(item["title"].replace(" ", "_"))
+                if results[res_idx] is None:
+                    result = dict()
+                else:
+                    result = results[res_idx]
+                result[src_lang] = item["title"].replace(" ", "_")
+                if not "langlinks" in item.keys() and results[res_idx] is None:
+                    results[res_idx] = result
+                    continue
+                for language_info in item["langlinks"]:
+                    if language_info["lang"] in langcodes:
+                        result[language_info["lang"]
+                            ] = language_info["title"].replace(" ", "_")
+                results[res_idx] = result
+            
+            if cont_req:
+                continue_val = data["continue"]["llcontinue"]
+                params["llcontinue"] = continue_val
+                
+            
+    return results
 
 
 def get_translations_from_file(fname: str) -> Tuple[list, set]:
