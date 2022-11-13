@@ -9,7 +9,7 @@ from .utils import extract_prop_name, extract_subj_name, extract_value, get_lang
 from typing import Optional
 
 
-def extract_properties(file: str, suffix: Optional[str] = None, use_category: Optional[list] = None):
+def extract_properties(file: str, suffix: Optional[str] = None, use_category: Optional[str] = None):
     """
     extract all properties from a language file and stores the results in individual lists.
     Additionally a single csv file containing all distinct property names is created.

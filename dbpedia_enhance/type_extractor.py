@@ -4,14 +4,13 @@ import csv
 from tqdm import tqdm
 from pathlib import Path
 from data.utils import DATA_FOLDER
-from .utils import extract_subj_name, get_lang_code, get_category_members
+from .utils import extract_subj_name, get_lang_code, get_category_members, extract_value
 from typing import Optional
 
 
-def extract_subjects(file: str, suffix: Optional[str] = None, use_category: Optional[str] = None):
+def extract_types(file: str, suffix: Optional[str] = None, use_category: Optional[str] = None):
     """
-    extract all subjects from a language file and stores the results in individual lists.
-    Additionally a single csv file containing all distinct subject names is created
+    extract all value types from a language file.
     """
 
     lang_code = get_lang_code(file)
@@ -24,17 +23,17 @@ def extract_subjects(file: str, suffix: Optional[str] = None, use_category: Opti
     if suffix is not None:
         lang_code = lang_code + "_" + suffix
 
-    subj_file = DATA_FOLDER / f"{lang_code}_subjects.csv"
+    type_file = DATA_FOLDER / f"{lang_code}_types.csv"
 
-    all_subjects = set()
+    all_types = set()
 
-    if subj_file.exists():
-        with open(subj_file, "r", newline="", encoding="utf-8") as csvfile:
+    if all_types.exists():
+        with open(type_file, "r", newline="", encoding="utf-8") as csvfile:
             csvreader = csv.reader(csvfile)
             for row in csvreader:
-                all_subjects.update(row)
+                all_types.update(row)
 
-        return all_subjects
+        return all_types
 
     chunk_args = _get_chunks(DATA_FOLDER / file)
 
@@ -44,25 +43,25 @@ def extract_subjects(file: str, suffix: Optional[str] = None, use_category: Opti
         pool_args.append(new_arg)
 
     with mp.Pool(processes=mp.cpu_count(), initializer=tqdm.set_lock, initargs=(mp.RLock(),)) as pool:
-        all_sub_list = pool.starmap(_extract_subjects, pool_args)
+        all_type_list = pool.starmap(_extract_types, pool_args)
 
 
-    for subjects in all_sub_list:
-        all_subjects.update(subjects)
+    for types in all_type_list:
+        all_types.update(types)
 
-    with open(subj_file, "w", encoding="utf-8", newline="") as out:
+    with open(type_file, "w", encoding="utf-8", newline="") as out:
         out_writer = csv.writer(out)
-        for sub in all_subjects:
+        for sub in all_types:
             out_writer.writerow([sub])
 
-    return all_subjects
+    return all_types
 
-def _extract_subjects(file: Path, chunk_start: int, chunk_end: int, size: int, filtr: Optional[list], pid: int) -> set:
+def _extract_types(file: Path, chunk_start: int, chunk_end: int, size: int, filtr: Optional[list], pid: int) -> set:
     """
-    extracts the subjects from an rdf file and saves them into individual files. Returns a set with all individual subject names.
+    extracts the types from an rdf file. Returns a set with all individual type names.
     When a filter is present we still try to extract subjects through the file to make sure that they are present in the exported data.
     """
-    all_subjects = set()
+    all_types = set()
 
     desc = f"#{pid}"
 
@@ -77,14 +76,15 @@ def _extract_subjects(file: Path, chunk_start: int, chunk_end: int, size: int, f
 
                 content = line.split("> ", 2)
                 subject = extract_subj_name(content[0])
+                value, form = extract_value(content[2])
 
                 if filtr is None or subject in filtr:
 
-                    all_subjects.add(subject)
+                    all_types.add(form)
 
                 pbar.update(len(line.encode("utf-8")))
 
-    return all_subjects
+    return all_types
 
 
 def _get_chunks(file: Path) -> list:
