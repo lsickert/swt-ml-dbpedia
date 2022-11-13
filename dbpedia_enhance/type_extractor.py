@@ -8,7 +8,7 @@ from .utils import extract_subj_name, get_lang_code, get_category_members, extra
 from typing import Optional
 
 
-def extract_types(file: str, suffix: Optional[str] = None, use_category: Optional[str] = None):
+def extract_types(file: str, suffix: Optional[str] = None, use_category: Optional[str] = None, force: Optional[bool] = False):
     """
     extract all value types from a language file.
     """
@@ -27,7 +27,7 @@ def extract_types(file: str, suffix: Optional[str] = None, use_category: Optiona
 
     all_types = set()
 
-    if all_types.exists():
+    if type_file.exists() and not force:
         with open(type_file, "r", newline="", encoding="utf-8") as csvfile:
             csvreader = csv.reader(csvfile)
             for row in csvreader:

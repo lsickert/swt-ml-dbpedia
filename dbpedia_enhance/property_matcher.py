@@ -3,7 +3,7 @@ from data.utils import DATA_FOLDER
 import csv
 from typing import Any, Optional
 from tqdm.auto import tqdm
-from .translate_entity_new import translate_entity
+from .translate_entity import translate_entity
 import re
 
 SPECIAL_PROPERTIES = ["url", "x", "y", "image"]
@@ -223,7 +223,7 @@ def _find_entity_matches(src_props: list, trg_lang_props: dict, src_lang: str, p
 
     def compare_entities(src_ents, trg_ents):
         # TODO: figure out how to handle multiple matching properties
-        max_matches = 0.6 * min(len(src_ents), len(trg_ents))
+        max_matches = 0.5 * min(len(src_ents), len(trg_ents))
         matches = 0
 
         for trg_ent in trg_ents:

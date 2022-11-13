@@ -9,7 +9,7 @@ from .utils import extract_prop_name, extract_subj_name, extract_value, get_lang
 from typing import Optional
 
 
-def extract_subjects(file: str, suffix: Optional[str] = None, use_category: Optional[str] = None):
+def extract_subjects(file: str, suffix: Optional[str] = None, use_category: Optional[str] = None, force: Optional[bool] = False):
     """
     extract all subjects from a language file and stores the results in individual lists.
     Additionally a single csv file containing all distinct subject names is created
@@ -33,7 +33,7 @@ def extract_subjects(file: str, suffix: Optional[str] = None, use_category: Opti
 
     all_subjects = set()
 
-    if subj_file.exists():
+    if subj_file.exists() and not force:
         with open(subj_file, "r", newline="", encoding="utf-8") as csvfile:
             csvreader = csv.reader(csvfile)
             for row in csvreader:

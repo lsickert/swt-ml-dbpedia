@@ -1,7 +1,8 @@
-rdflib
 requests
 filelock
+tqdm
 
 #Development
 pylint
 jupyterlab
+matplotlib

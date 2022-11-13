@@ -1,7 +1,7 @@
 import argparse
 import re
 import data.utils as dat_util
-from dbpedia_enhance import property_extractor, entity_extractor_new, property_matcher, translate_entity_new
+from dbpedia_enhance import property_extractor, entity_extractor_new, property_matcher, translate_entity, type_extractor
 from analysis import analysis
 
 parser = argparse.ArgumentParser(prog="DBpedia Property Enhancer",
@@ -20,7 +20,7 @@ parser.add_argument("--force_new", type=bool, default=False,
 parser.add_argument("--src_cat", type=str, default=None,
                     help="Limit the extraction of properties on the source file to members of this category.")
 parser.add_argument("--trg_cat", type=str, default=None,
-                    help="Limit the extraction of properties on the source file to members of this category.")
+                    help="Limit the extraction of properties on the target file to members of this category.")
 parser.add_argument("--out_suffix", type=str, default=None,
                     help="Add this as suffix to the names of the extracted files")
 
@@ -29,24 +29,6 @@ ALL_LANG_FILES = [
     "https://databus.dbpedia.org/dbpedia/generic/infobox-properties/2022.03.01/infobox-properties_lang=en.ttl.bz2",
     "https://databus.dbpedia.org/dbpedia/generic/infobox-properties/2022.03.01/infobox-properties_lang=nl.ttl.bz2"
 ]
-
-# if __name__ == "__main__":
-
-#     props = property_extractor.extract_properties("infobox-properties_lang=de.ttl")
-
-#     analysis.get_prop_distribution(props, "de")
-
-# if __name__ == "__main__":
-
-#     lang_files = [
-#         "infobox-properties_lang=de.ttl",
-#         "infobox-properties_lang=en.ttl",
-#         "infobox-properties_lang=nl.ttl"
-#     ]
-
-#     lang_codes, translations = translate_entity_new.get_translations(lang_files)
-
-#     print(analysis.get_lang_overlap(translations, lang_codes))
 
 if __name__ == "__main__":
 
@@ -58,9 +40,9 @@ if __name__ == "__main__":
     lang_files = [src_lang_link, trg_lang_link]
 
     # replace this with ALL_LANG_FILES to run download for all considered languages
-    filenames = dat_util.get_data(lang_files)
+    filenames = dat_util.get_data(lang_files, options.force_new)
 
-    #subj_translations = translate_entity_new.get_translations(
+    #subj_translations = translate_entity.get_translations(
     #    filenames, options.out_suffix)
 
     # TODO: write this in a better way
@@ -71,14 +53,14 @@ if __name__ == "__main__":
     for fname in filenames:
         if re.search(f"{options.src_lang}.ttl", fname):
             src_props = property_extractor.extract_properties(
-                fname, options.out_suffix, options.src_cat)
+                fname, options.out_suffix, options.src_cat, options.force_new)
             src_entities = entity_extractor_new.extract_subjects(
-                fname, options.out_suffix, options.src_cat)
+                fname, options.out_suffix, options.src_cat, options.force_new)
         else:
             trg_props = property_extractor.extract_properties(
-                fname, options.out_suffix, options.trg_cat)
+                fname, options.out_suffix, options.trg_cat, options.force_new)
             trg_entities = entity_extractor_new.extract_subjects(
-                fname, options.out_suffix, options.trg_cat)
+                fname, options.out_suffix, options.trg_cat, options.force_new)
 
     matches = property_matcher.find_matches(
         src_props, trg_props, options.src_lang, options.trg_lang, options.out_suffix)
@@ -88,6 +70,3 @@ if __name__ == "__main__":
     print(f"{len(matches)} matches found, {round(len(matches)/len(trg_props),4) * 100} percent of target properties matched")
     print("matches:")
     print(matches)
-
-    #property_extractor.extract_properties("infobox-properties_lang=de.ttl","country","Kategorie:Staat in Europa")
-    #entity_extractor_new.extract_subjects("infobox-properties_lang=de.ttl","country","Kategorie:Staat in Europa")
